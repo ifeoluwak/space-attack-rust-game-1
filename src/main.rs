@@ -1,12 +1,11 @@
 mod player;
 mod constants;
 mod components;
+mod enemy;
 
 use bevy::{prelude::*};
-use components::Pos;
+use enemy::EnemyPlugin;
 use player::PlayerPlugin;
-
-
 
 
 fn main() {
@@ -14,6 +13,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(start_up_system)
         .add_plugin(PlayerPlugin)
+        .add_plugin(EnemyPlugin)
         .run();
 }
 

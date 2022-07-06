@@ -1,8 +1,8 @@
 use std::f32::consts::FRAC_PI_6;
 
-use bevy::{prelude::*};
+use bevy::{prelude::*, sprite::collide_aabb::collide, audio};
 
-use crate::{components::{Player, Laser, Pos, PlayerDirection}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND}};
+use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, PLAYER_SIZE, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND}};
 
 pub struct PlayerPlugin;
 
@@ -11,7 +11,8 @@ impl Plugin for PlayerPlugin {
        app.add_startup_system_to_stage(StartupStage::Startup, player_init_system)
        .insert_resource(Pos(0f32))
        .add_system(laser_movement_system)
-       .add_system(keyboard_system);
+       .add_system(keyboard_system)
+       .add_system(laser_collide_system);
     }
 }
 
@@ -116,14 +117,14 @@ fn keyboard_system(
 
 fn laser_movement_system(
     mut commands: Commands,
-    mut query: Query<(&mut Transform, Entity, &PlayerDirection), With<Laser>>,
+    mut laser_query: Query<(&mut Transform, Entity, &PlayerDirection), With<Laser>>,
     window: Res<Windows>,
 ) {
     let primary_win = window.primary();
 
     let (win_width, win_height) = (primary_win.width(), primary_win.height());
 
-    for (mut laser_transform, entity, direction) in query.iter_mut() {
+    for (mut laser_transform, entity, direction) in laser_query.iter_mut() {
         // println!("{:?}", laser_transform.translation.x);
         // println!("{:?}", entity);
         if laser_transform.translation.y < win_height || laser_transform.translation.x < win_width {
@@ -142,6 +143,36 @@ fn laser_movement_system(
             }
         } else {
             commands.entity(entity).despawn();
+        }
+    }
+}
+
+fn laser_collide_system(
+    mut commands: Commands,
+    laser_query: Query<&Transform, With<Laser>>,
+    enemy_query: Query<(&Transform, Entity), With<Enemy>>,
+    audio: Res<Audio>,
+    asset_server: Res<AssetServer>
+) {
+    for laser in laser_query.iter() {
+        // println!("{:?}", laser);
+
+        for (&e_transform, _) in enemy_query.iter() {
+
+            let collision = collide(laser.translation,
+                Vec2::new(LASER_SIZE.0 * 0.5, LASER_SIZE.1 * 0.5),
+                e_transform.translation,
+                Vec2::new(ENEMY_SIZE.0 * 0.5, ENEMY_SIZE.1 * 0.5)
+            );
+
+            match collision {
+                Some(_) => {
+                    let audio_handle: Handle<AudioSource> = asset_server.load(ENEMY_COLLIDE_SOUND);
+                    audio.play(audio_handle);
+                },
+                None => {},
+                // Err(err) => println!("{:?}", err)
+            }
         }
     }
 }
