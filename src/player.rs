@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_6;
 
 use bevy::{prelude::*, sprite::collide_aabb::collide, audio};
 
-use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, PLAYER_SIZE, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND}};
+use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy, EnemyCount}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, PLAYER_SIZE, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND}};
 
 pub struct PlayerPlugin;
 
@@ -110,9 +110,6 @@ fn keyboard_system(
             },
             Err(err) => println!("xxxxxx {:?}", err)
         }
-
-
-    // player_transform.
 }
 
 fn laser_movement_system(
@@ -125,10 +122,7 @@ fn laser_movement_system(
     let (win_width, win_height) = (primary_win.width(), primary_win.height());
 
     for (mut laser_transform, entity, direction) in laser_query.iter_mut() {
-        // println!("{:?}", laser_transform.translation.x);
-        // println!("{:?}", entity);
         if laser_transform.translation.y < win_height || laser_transform.translation.x < win_width {
-            // laser_transform.translation.z += 1.;
 
             match direction {
                 PlayerDirection::Up => laser_transform.translation.y += 1.,
@@ -152,12 +146,13 @@ fn laser_collide_system(
     laser_query: Query<&Transform, With<Laser>>,
     enemy_query: Query<(&Transform, Entity), With<Enemy>>,
     audio: Res<Audio>,
-    asset_server: Res<AssetServer>
+    asset_server: Res<AssetServer>,
+    mut enemy_count: ResMut<EnemyCount>
 ) {
     for laser in laser_query.iter() {
         // println!("{:?}", laser);
 
-        for (&e_transform, _) in enemy_query.iter() {
+        for (&e_transform, entity) in enemy_query.iter() {
 
             let collision = collide(laser.translation,
                 Vec2::new(LASER_SIZE.0 * 0.5, LASER_SIZE.1 * 0.5),
@@ -169,9 +164,12 @@ fn laser_collide_system(
                 Some(_) => {
                     let audio_handle: Handle<AudioSource> = asset_server.load(ENEMY_COLLIDE_SOUND);
                     audio.play(audio_handle);
+
+                    commands.entity(entity).despawn();
+
+                    enemy_count.0 -= 1;
                 },
                 None => {},
-                // Err(err) => println!("{:?}", err)
             }
         }
     }

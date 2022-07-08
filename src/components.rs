@@ -9,6 +9,9 @@ pub struct Enemy;
 #[derive(Component)]
 pub struct Laser;
 
+#[derive(Component)]
+pub struct EnemyLaser;
+
 #[derive(Debug)]
 pub struct Pos(pub f32);
 
@@ -31,3 +34,19 @@ impl From<f32> for PlayerDirection {
         }
     }
 }
+#[derive(Component, Debug)]
+pub enum EnemyDirection {
+    Left,
+    Right
+}
+
+impl From<f32> for EnemyDirection {
+    fn from(d: f32) -> Self {
+        if d < 0. {
+            return EnemyDirection::Right;
+        }
+        EnemyDirection::Left
+    }
+}
+
+pub struct EnemyCount(pub u32);
