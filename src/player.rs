@@ -1,6 +1,6 @@
 use std::f32::consts::FRAC_PI_6;
 
-use bevy::{prelude::*, sprite::collide_aabb::collide, audio};
+use bevy::{prelude::*, sprite::collide_aabb::collide, audio, utils::HashSet};
 
 use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy, EnemyCount}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, PLAYER_SIZE, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND}};
 
@@ -30,7 +30,7 @@ fn player_init_system(
     commands.spawn_bundle(SpriteBundle {
         texture: player,
         transform: Transform {
-            translation: Vec3::new(0., -window_height / 2. + 75. / 2., 0.),
+            translation: Vec3::new(0., -window_height / 2. + 75. / 2., 1.),
             scale: Vec3::new(0.5, 0.5, 0.),
             ..Default::default()
         },
@@ -53,63 +53,63 @@ fn keyboard_system(
     let (window_width, _) = (primary_window.width(), primary_window.height());
     let window_width = window_width / 2. - 30.; // some padding by each side
 
-        let player_transform = query.get_single_mut();
-        match player_transform {
-            Ok(mut t) => {
-                if keyboard.just_pressed(KeyCode::RShift) && keyboard.just_pressed(KeyCode::Right) {
-                    // rotate maximum of 30 degrees
-                    if pos.0 >= 0f32 {
-                        pos.0 -= FRAC_PI_6;
-                        t.rotation = Quat::from_rotation_z(pos.0);
-                    }
-                    // return;
-                } else if keyboard.just_pressed(KeyCode::RShift) && keyboard.just_pressed(KeyCode::Left) {
-                    // rotate maximum of 30 degrees
-                    if pos.0 <= 0f32 {
-                        pos.0 += FRAC_PI_6;
-                        t.rotation = Quat::from_rotation_z(pos.0);
-                    }
-                } else if keyboard.pressed(KeyCode::Right) {
-                    if window_width > t.translation.x {
-                        t.translation.x += 1. / 60. * 300.;
-                    }
-                } else if keyboard.pressed(KeyCode::Left) {
-                    if -window_width < t.translation.x {
-                        t.translation.x -= 1. / 60. * 300.;
-                    }
-                } else if keyboard.just_pressed(KeyCode::Space) {
-                    let laser: Handle<Image> = asset_server.load(LASER_PNG);
-
-                    let (x, y, z) = (t.translation.x, t.translation.y, t.translation.z);
-
-                    let mut mod_x = x;
-
-                    if pos.0 < 0. {
-                        mod_x += 28.;
-                    } else if pos.0 > 0. {
-                        mod_x -= 28.;
-                    }
-
-                    let laser_sound: Handle<AudioSource> = asset_server.load(LASER_SOUND);
-
-                    commands.spawn_bundle(SpriteBundle {
-                        texture: laser,
-                        transform: Transform {
-                            translation: Vec3::new(mod_x, y + 50., z),
-                            rotation: Quat::from_rotation_z(pos.0),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-                    .insert(Laser)
-                    .insert(PlayerDirection::from(pos.0));
-                    
-                    audio.play(laser_sound);
-
+    let player_transform = query.get_single_mut();
+    match player_transform {
+        Ok(mut t) => {
+            if keyboard.just_pressed(KeyCode::RShift) && keyboard.just_pressed(KeyCode::Right) {
+                // rotate maximum of 30 degrees
+                if pos.0 >= 0f32 {
+                    pos.0 -= FRAC_PI_6;
+                    t.rotation = Quat::from_rotation_z(pos.0);
                 }
-            },
-            Err(err) => println!("xxxxxx {:?}", err)
-        }
+                // return;
+            } else if keyboard.just_pressed(KeyCode::RShift) && keyboard.just_pressed(KeyCode::Left) {
+                // rotate maximum of 30 degrees
+                if pos.0 <= 0f32 {
+                    pos.0 += FRAC_PI_6;
+                    t.rotation = Quat::from_rotation_z(pos.0);
+                }
+            } else if keyboard.pressed(KeyCode::Right) {
+                if window_width > t.translation.x {
+                    t.translation.x += 1. / 60. * 300.;
+                }
+            } else if keyboard.pressed(KeyCode::Left) {
+                if -window_width < t.translation.x {
+                    t.translation.x -= 1. / 60. * 300.;
+                }
+            } else if keyboard.just_pressed(KeyCode::Space) {
+                let laser: Handle<Image> = asset_server.load(LASER_PNG);
+
+                let (x, y, z) = (t.translation.x, t.translation.y, t.translation.z);
+
+                let mut mod_x = x;
+
+                if pos.0 < 0. {
+                    mod_x += 28.;
+                } else if pos.0 > 0. {
+                    mod_x -= 28.;
+                }
+
+                let laser_sound: Handle<AudioSource> = asset_server.load(LASER_SOUND);
+
+                commands.spawn_bundle(SpriteBundle {
+                    texture: laser,
+                    transform: Transform {
+                        translation: Vec3::new(mod_x, y + 50., z),
+                        rotation: Quat::from_rotation_z(pos.0),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Laser)
+                .insert(PlayerDirection::from(pos.0));
+                
+                audio.play(laser_sound);
+
+            }
+        },
+        Err(err) => println!("xxxxxx {:?}", err)
+    }
 }
 
 fn laser_movement_system(
@@ -125,14 +125,14 @@ fn laser_movement_system(
         if laser_transform.translation.y < win_height || laser_transform.translation.x < win_width {
 
             match direction {
-                PlayerDirection::Up => laser_transform.translation.y += 1.,
+                PlayerDirection::Up => laser_transform.translation.y += 1. * 20.,
                 PlayerDirection::Left => {
-                    laser_transform.translation.y += 1.;
-                    laser_transform.translation.x += 1.;
+                    laser_transform.translation.y += 1. * 20.;
+                    laser_transform.translation.x += 1. * 20.;
                 },
                 PlayerDirection::Right => {
-                    laser_transform.translation.y += 1.;
-                    laser_transform.translation.x -= 1.;
+                    laser_transform.translation.y += 1. * 20.;
+                    laser_transform.translation.x -= 1.  * 20.;
                 }
             }
         } else {
@@ -143,16 +143,23 @@ fn laser_movement_system(
 
 fn laser_collide_system(
     mut commands: Commands,
-    laser_query: Query<&Transform, With<Laser>>,
+    laser_query: Query<(&Transform, Entity), With<Laser>>,
     enemy_query: Query<(&Transform, Entity), With<Enemy>>,
     audio: Res<Audio>,
     asset_server: Res<AssetServer>,
     mut enemy_count: ResMut<EnemyCount>
 ) {
-    for laser in laser_query.iter() {
+    let mut despawned_entities: HashSet<Entity> = HashSet::new();
+    for (laser, laser_entity) in laser_query.iter() {
         // println!("{:?}", laser);
+        if despawned_entities.contains(&laser_entity) {
+            continue;
+        }
 
-        for (&e_transform, entity) in enemy_query.iter() {
+        for (&e_transform, enemy_entity) in enemy_query.iter() {
+            if despawned_entities.contains(&laser_entity) || despawned_entities.contains(&enemy_entity) {
+                continue;
+            }
 
             let collision = collide(laser.translation,
                 Vec2::new(LASER_SIZE.0 * 0.5, LASER_SIZE.1 * 0.5),
@@ -165,9 +172,13 @@ fn laser_collide_system(
                     let audio_handle: Handle<AudioSource> = asset_server.load(ENEMY_COLLIDE_SOUND);
                     audio.play(audio_handle);
 
-                    commands.entity(entity).despawn();
+                    commands.entity(enemy_entity).despawn();
+                    commands.entity(laser_entity).despawn();
 
                     enemy_count.0 -= 1;
+                    despawned_entities.insert(enemy_entity);
+                    despawned_entities.insert(laser_entity);
+
                 },
                 None => {},
             }

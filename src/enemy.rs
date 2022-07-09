@@ -52,7 +52,7 @@ fn enemy_spawn_system(
         commands.spawn_bundle(SpriteBundle {
             texture: enemy_handle,
             transform: Transform {
-                translation: Vec3::new(random_x, 0., 0.),
+                translation: Vec3::new(random_x, 0., 1.),
                 scale: Vec3::new(0.5, 0.5, 0.),
                 ..Default::default()
             },
@@ -77,6 +77,7 @@ fn enemy_movement_system(
 
     let primary_window = window.get_primary().unwrap();
     let width = primary_window.width() / 2.;
+    let height = primary_window.height() / 2.;
 
     for (mut enemy_tf, mut dir) in query.iter_mut() {
             match *dir {
@@ -87,8 +88,9 @@ fn enemy_movement_system(
                     enemy_tf.translation.x -= 1.
                 },
             }
-        
-            enemy_tf.translation.y += y + random_y;
+            if enemy_tf.translation.y < height {
+                enemy_tf.translation.y += y + random_y;
+            }
 
             if enemy_tf.translation.x > width {
                 println!("equals to width {:?}", width);

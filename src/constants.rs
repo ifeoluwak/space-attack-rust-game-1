@@ -2,8 +2,10 @@ pub const PLAYER_PNG: &str = "player.png";
 pub const ENEMY_PNG: &str = "enemyBlue.png";
 pub const LASER_PNG: &str = "laser.png";
 pub const ENEMY_LASER_PNG: &str = "laserBlue.png";
+pub const BACKGROUND_PNG: &str = "purple.png";
 
 
+pub const GAME_SOUND: &str = "game-sound.ogg";
 pub const LASER_SOUND: &str = "sfx_laser.ogg";
 pub const ENEMY_COLLIDE_SOUND: &str = "sfx_shieldDown.ogg";
 
