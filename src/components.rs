@@ -49,6 +49,8 @@ impl From<f32> for EnemyDirection {
     }
 }
 
+pub struct PlayerCount(pub u32);
+
 pub struct EnemyCount(pub u32);
 
 

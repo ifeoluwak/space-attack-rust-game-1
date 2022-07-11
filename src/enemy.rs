@@ -1,13 +1,13 @@
 use bevy::core::FixedTimestep;
-use bevy::scene::prelude;
 
+use bevy::sprite::collide_aabb::collide;
 use bevy::{prelude::*};
 use rand::{thread_rng, Rng};
 
 
 
-use crate::components::{Enemy, EnemyDirection, EnemyCount, EnemyLaser};
-use crate::constants::{ENEMY_PNG, ENEMY_LASER_PNG};
+use crate::components::{Enemy, EnemyDirection, EnemyCount, EnemyLaser, Player, ExplosionTimer, PlayerCount};
+use crate::constants::{ENEMY_PNG, ENEMY_LASER_PNG, ENEMY_LASER_SIZE, PLAYER_SIZE, EXPLOSION_PNG};
 
 pub struct EnemyPlugin;
 
@@ -26,7 +26,8 @@ impl Plugin for EnemyPlugin {
             .with_run_criteria(FixedTimestep::step(2.5))
             .with_system(enemy_laser_spawn_system)
         )
-        .add_system(enemy_laser_movement_system);
+        .add_system(enemy_laser_movement_system)
+        .add_system(laser_collide_system);
     }
 }
 
@@ -70,7 +71,6 @@ fn enemy_movement_system(
     mut query: Query<(&mut Transform, &mut EnemyDirection), With<Enemy>>,
     window: Res<Windows>,
     time: Res<Time>,
-    // mut dir: ResMut<EnemyDirection>
 ){
     let random_y = thread_rng().gen_range(0..1) as f32;
     let y = time.seconds_since_startup().cos() as f32;
@@ -122,16 +122,56 @@ fn enemy_laser_spawn_system(
 }
 
 fn enemy_laser_movement_system(
-    mut commands: Commands,
     mut laser_query: Query<(&mut Transform, Entity), With<EnemyLaser>>,
-    window: Res<Windows>,
-    time: Res<Time>,
 ) {
     for (mut enemy_laser, _) in laser_query.iter_mut() {
         enemy_laser.translation.y -= 5.;
     }
 }
 
-fn laser_collide_system() {
-    
+fn laser_collide_system(
+    mut commands: Commands,
+    laser_query: Query<(&Transform, Entity), With<EnemyLaser>>,
+    player_query: Query<(&Transform, Entity), With<Player>>,
+    mut texture_atlas: ResMut<Assets<TextureAtlas>>,
+    asset_server: Res<AssetServer>,
+    mut player_count: ResMut<PlayerCount>
+) {
+    for (laser_tf, laser_entity) in laser_query.iter() {
+        
+        match player_query.get_single() {
+            Ok((player_tf, player_entity)) => {
+                let collision = collide(
+                    laser_tf.translation,
+                    Vec2::new(ENEMY_LASER_SIZE.0 * 0.3, ENEMY_LASER_SIZE.1 * 0.3),
+                    player_tf.translation,
+                    Vec2::new(PLAYER_SIZE.0 * 0.6, PLAYER_SIZE.1 * 0.6)
+                );
+                if let Some(_) = collision {
+                    let asset: Handle<Image> = asset_server.load(EXPLOSION_PNG);
+                    let atlas = TextureAtlas::from_grid(asset, Vec2::new(64., 64.), 4, 4);
+                    let atlas_handle = texture_atlas.add(atlas);
+
+                    commands.spawn_bundle(SpriteSheetBundle {
+                        texture_atlas: atlas_handle,
+                        transform: Transform {
+                            translation: player_tf.translation,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .insert(ExplosionTimer {
+                        timer: Timer::from_seconds(0.05, true)
+                    });
+
+                    commands.entity(laser_entity).despawn();
+                    commands.entity(player_entity).despawn();
+
+                    player_count.0 -= 1;
+                }
+            },
+            Err(_) => {},
+        }
+    }
 }
+

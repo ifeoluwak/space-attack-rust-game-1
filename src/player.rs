@@ -1,14 +1,18 @@
 use std::{f32::consts::FRAC_PI_6};
 
-use bevy::{prelude::*, sprite::collide_aabb::collide, utils::HashSet};
+use bevy::{prelude::*, sprite::collide_aabb::collide, utils::HashSet, core::FixedTimestep};
 
-use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy, EnemyCount, ExplosionTimer}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND, EXPLOSION_PNG}};
+use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy, EnemyCount, ExplosionTimer, PlayerCount}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND, EXPLOSION_PNG}};
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-       app.add_startup_system_to_stage(StartupStage::Startup, player_init_system)
+    app.insert_resource(PlayerCount(0))
+       .add_system_set(
+        SystemSet::new().with_run_criteria(FixedTimestep::step(3.))
+        .with_system(player_init_system)
+    )
        .insert_resource(Pos(0f32))
        .add_system(laser_movement_system)
        .add_system(keyboard_system)
@@ -21,23 +25,28 @@ fn player_init_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     window: Res<Windows>,
+    mut player_count: ResMut<PlayerCount>
 ) {
-    let player: Handle<Image> = asset_server.load(PLAYER_PNG);
+    if player_count.0 < 1 {
+        let player: Handle<Image> = asset_server.load(PLAYER_PNG);
 
-    let primary_window = window.primary();
+        let primary_window = window.primary();
 
-    let (_, window_height) = (primary_window.width(), primary_window.height());
+        let (_, window_height) = (primary_window.width(), primary_window.height());
 
-    commands.spawn_bundle(SpriteBundle {
-        texture: player,
-        transform: Transform {
-            translation: Vec3::new(0., -window_height / 2. + 75. / 2., 1.),
-            scale: Vec3::new(0.5, 0.5, 0.),
+        commands.spawn_bundle(SpriteBundle {
+            texture: player,
+            transform: Transform {
+                translation: Vec3::new(0., -window_height / 2. + 75. / 2., 1.),
+                scale: Vec3::new(0.5, 0.5, 0.),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    })
-    .insert(Player);
+        })
+        .insert(Player);
+
+        player_count.0 += 1;
+    }
 }
 
 fn keyboard_system(
