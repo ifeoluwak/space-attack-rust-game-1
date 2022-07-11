@@ -92,12 +92,13 @@ fn keyboard_system(
 
                 let (x, y, z) = (t.translation.x, t.translation.y, t.translation.z);
 
-                let mut mod_x = x;
+                let mut modified_x = x;
 
+                // laser should appear with 28. pixel padding
                 if pos.0 < 0. {
-                    mod_x += 28.;
+                    modified_x += 28.;
                 } else if pos.0 > 0. {
-                    mod_x -= 28.;
+                    modified_x -= 28.;
                 }
 
                 let laser_sound: Handle<AudioSource> = asset_server.load(LASER_SOUND);
@@ -105,7 +106,7 @@ fn keyboard_system(
                 commands.spawn_bundle(SpriteBundle {
                     texture: laser,
                     transform: Transform {
-                        translation: Vec3::new(mod_x, y + 50., z),
+                        translation: Vec3::new(modified_x, y + 50., z),
                         rotation: Quat::from_rotation_z(pos.0),
                         ..Default::default()
                     },

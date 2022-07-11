@@ -6,7 +6,7 @@ use rand::{thread_rng, Rng};
 
 
 
-use crate::components::{Enemy, EnemyDirection, EnemyCount, EnemyLaser, Player, ExplosionTimer, PlayerCount};
+use crate::components::{Enemy, EnemyDirection, EnemyCount, EnemyLaser, Player, ExplosionTimer, PlayerCount, Pos};
 use crate::constants::{ENEMY_PNG, ENEMY_LASER_PNG, ENEMY_LASER_SIZE, PLAYER_SIZE, EXPLOSION_PNG};
 
 pub struct EnemyPlugin;
@@ -135,7 +135,8 @@ fn laser_collide_system(
     player_query: Query<(&Transform, Entity), With<Player>>,
     mut texture_atlas: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
-    mut player_count: ResMut<PlayerCount>
+    mut player_count: ResMut<PlayerCount>,
+    mut pos: ResMut<Pos>,
 ) {
     for (laser_tf, laser_entity) in laser_query.iter() {
         
@@ -168,6 +169,7 @@ fn laser_collide_system(
                     commands.entity(player_entity).despawn();
 
                     player_count.0 -= 1;
+                    pos.0 = 0f32;
                 }
             },
             Err(_) => {},
