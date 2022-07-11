@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::{prelude::Component, core::Timer};
 
 #[derive(Component)]
 pub struct Player;
@@ -50,3 +50,12 @@ impl From<f32> for EnemyDirection {
 }
 
 pub struct EnemyCount(pub u32);
+
+
+#[derive(Component, Debug)]
+pub struct ExplosionTimer {
+    pub timer: Timer 
+}
+
+#[derive(Component, Debug)]
+pub struct Explosion;

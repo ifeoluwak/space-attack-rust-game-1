@@ -1,8 +1,8 @@
-use std::f32::consts::FRAC_PI_6;
+use std::{f32::consts::FRAC_PI_6};
 
-use bevy::{prelude::*, sprite::collide_aabb::collide, audio, utils::HashSet};
+use bevy::{prelude::*, sprite::collide_aabb::collide, utils::HashSet};
 
-use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy, EnemyCount}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, PLAYER_SIZE, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND}};
+use crate::{components::{Player, Laser, Pos, PlayerDirection, Enemy, EnemyCount, ExplosionTimer}, constants::{PLAYER_PNG, LASER_PNG, LASER_SOUND, ENEMY_SIZE, LASER_SIZE, ENEMY_COLLIDE_SOUND, EXPLOSION_PNG}};
 
 pub struct PlayerPlugin;
 
@@ -12,7 +12,8 @@ impl Plugin for PlayerPlugin {
        .insert_resource(Pos(0f32))
        .add_system(laser_movement_system)
        .add_system(keyboard_system)
-       .add_system(laser_collide_system);
+       .add_system(laser_collide_system)
+       .add_system(explosion_system);
     }
 }
 
@@ -108,7 +109,7 @@ fn keyboard_system(
 
             }
         },
-        Err(err) => println!("xxxxxx {:?}", err)
+        Err(_) => {}
     }
 }
 
@@ -147,11 +148,11 @@ fn laser_collide_system(
     enemy_query: Query<(&Transform, Entity), With<Enemy>>,
     audio: Res<Audio>,
     asset_server: Res<AssetServer>,
-    mut enemy_count: ResMut<EnemyCount>
+    mut enemy_count: ResMut<EnemyCount>,
+    mut texture_atlas: ResMut<Assets<TextureAtlas>>
 ) {
     let mut despawned_entities: HashSet<Entity> = HashSet::new();
     for (laser, laser_entity) in laser_query.iter() {
-        // println!("{:?}", laser);
         if despawned_entities.contains(&laser_entity) {
             continue;
         }
@@ -179,8 +180,41 @@ fn laser_collide_system(
                     despawned_entities.insert(enemy_entity);
                     despawned_entities.insert(laser_entity);
 
+                    let texture: Handle<Image> = asset_server.load(EXPLOSION_PNG);
+                    let atlas = TextureAtlas::from_grid(texture, Vec2::new(64., 64.), 4, 4);
+                    let texture_atlas_handle = texture_atlas.add(atlas);
+
+                    commands.spawn_bundle(SpriteSheetBundle {
+                        texture_atlas: texture_atlas_handle,
+                        transform: Transform {
+                            translation: e_transform.translation,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .insert(ExplosionTimer {
+                        timer: Timer::from_seconds(0.05, true)
+                    });
+
                 },
                 None => {},
+            }
+        }
+    }
+}
+
+fn explosion_system(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut ExplosionTimer, &mut TextureAtlasSprite)>,
+    time: Res<Time>
+) {
+    for (entity, mut explosion_timer, mut sprite) in query.iter_mut() {
+        explosion_timer.timer.tick(time.delta());
+
+        if explosion_timer.timer.just_finished() {
+            sprite.index += 1;
+            if sprite.index >= 16 {
+                commands.entity(entity).despawn();
             }
         }
     }

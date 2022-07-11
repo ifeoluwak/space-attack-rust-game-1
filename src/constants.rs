@@ -4,6 +4,8 @@ pub const LASER_PNG: &str = "laser.png";
 pub const ENEMY_LASER_PNG: &str = "laserBlue.png";
 pub const BACKGROUND_PNG: &str = "purple.png";
 
+pub const EXPLOSION_PNG: &str = "explo_a_sheet.png";
+
 
 pub const GAME_SOUND: &str = "game-sound.ogg";
 pub const LASER_SOUND: &str = "sfx_laser.ogg";

@@ -93,11 +93,9 @@ fn enemy_movement_system(
             }
 
             if enemy_tf.translation.x > width {
-                println!("equals to width {:?}", width);
                 *dir = EnemyDirection::Right;
             } else if enemy_tf.translation.x < -width {
                 *dir = EnemyDirection::Left;
-                println!("equals to - width{:?}", width);
             }
     }
 }
@@ -127,8 +125,13 @@ fn enemy_laser_movement_system(
     mut commands: Commands,
     mut laser_query: Query<(&mut Transform, Entity), With<EnemyLaser>>,
     window: Res<Windows>,
+    time: Res<Time>,
 ) {
     for (mut enemy_laser, _) in laser_query.iter_mut() {
-        enemy_laser.translation.y -= 1.;
+        enemy_laser.translation.y -= 5.;
     }
+}
+
+fn laser_collide_system() {
+    
 }
